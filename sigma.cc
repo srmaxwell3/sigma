@@ -334,7 +334,7 @@ double G(Expr const *e1, Expr const *e2) {
 
 size_t NParams;
 size_t Cost;
-size_t CostSav;
+long CostSav;
 size_t M;
 
 void TryParams
@@ -358,7 +358,7 @@ void TryParams
   pairCount += 1;
   NParams = pairs.size();
   M = params[0].size() + params[1].size();
-  fprintf(stdout, "TryParams(%s [%lu, %lu], %s [%lu, %lu]): NParams = %lu, Cost = %lu, CostSav = %lu, M = %lu\n",
+  fprintf(stdout, "TryParams(%s [count=%lu, cost=%lu], %s [count=%lu, cost=%lu]): NParams = %lu, Cost = %lu, CostSav = %ld, M = %lu\n",
           e1->ToString().c_str(),
           e1Count,
           e1->Cost(),
@@ -425,7 +425,7 @@ double Sigma(Expr const *e1, Expr const *e2) {
   fprintf(stdout, "Sigma(e1 = %s, e2 = %s)\n", e1->ToString().c_str(), e2->ToString().c_str());
 
   // The subroutine S does a coordinated tree walk on the expressions
-  // e and e' setting the variables NPARMS to the nurnber of
+  // e and e' setting the variables NPARMS to the number of
   // parameters and COSTSAV to the amount of code saved by the shared
   // code sequences. The subroutine TRYPARMS (not defined here)
   // increments NPARMS and decrements COSTSAV by e[cost] if a new
@@ -433,40 +433,43 @@ double Sigma(Expr const *e1, Expr const *e2) {
   // necessary to evaluate the entire expression e.  e[count] is the
   // number of formally identical instances of this expression.
 
-  if (e1->IsCongruentTo(e2)) {
-    return 0.0;
+  double result = 0.0;
+
+  if (!e1->IsCongruentTo(e2)) {
+    CostSav = Cost = e1->Cost() + e1->Cost();
+    map<string, size_t> params[2];
+    map<pair<string, string>, size_t> pairs;
+    S(e1, e2, params, pairs);
+    for (auto const &p : params[0]) {
+      fprintf(stdout, "    params[0] %2lu: %s\n", p.second, p.first.c_str());
+    }
+    for (auto const &p : params[1]) {
+      fprintf(stdout, "    params[1] %2lu: %s\n", p.second, p.first.c_str());
+    }
+    for (auto const &p : pairs) {
+      fprintf(stdout, "    pairs[] %2lu: %s; %s\n", p.second, p.first.first.c_str(), p.first.second.c_str());
+    }
+
+    // The final expression in the body of SIGMA requires some
+    // explanation.  The numerator is the estimated cost in code size of
+    // the overhead required to set up parameters (M * NPARMS), call (+
+    // M), and return (+ 1) from a similarity-created subroutine.  The
+    // denominator is the amount of code saved by replacing M - 1 of the
+    // expressions with calls to a common sequence of code.  Hence if
+    // SIGMA(e, e') < 1, then code size will be reduced by implementing
+    // e and e' as calls on a common subroutine.  The application of the
+    // similarity function SIGMA (more precisely its subroutine S)
+    // partitions an expression into a body and a collection of
+    // parameter expressions.  In subsequent discussions, body(e) refers
+    // to the expression resulting from the removal of the parameter
+    // nodes in e, and parms(e) refers to the set of sub-expressions
+    // identified by S as parameters of e.
+
+    result = double(M * NParams + M + 1) / double((M - 1) * CostSav);
   }
 
-  CostSav = Cost = e1->Cost() + e1->Cost();
-  map<string, size_t> params[2];
-  map<pair<string, string>, size_t> pairs;
-  S(e1, e2, params, pairs);
-  for (auto const &p : params[0]) {
-    fprintf(stdout, "    [0] %2lu: %s\n", p.second, p.first.c_str());
-  }
-  for (auto const &p : params[1]) {
-    fprintf(stdout, "    [1] %2lu: %s\n", p.second, p.first.c_str());
-  }
-  for (auto const &p : pairs) {
-    fprintf(stdout, "    [p] %2lu: %s; %s\n", p.second, p.first.first.c_str(), p.first.second.c_str());
-  }
-
-  // The final expression in the body of SIGMA requires some
-  // explanation.  The numerator is the estimated cost in code size of
-  // the overhead required to set up parameters (M * NPARMS), call (+
-  // M), and return (+ 1) from a similarity-created subroutine.  The
-  // denominator is the amount of code saved by replacing M - 1 of the
-  // expressions with calls to a common sequence of code.  Hence if
-  // SIGMA(e, e') < 1, then code size will be reduced by implementing
-  // e and e' as calls on a common subroutine.  The application of the
-  // similarity function SIGMA (more precisely its subroutine S)
-  // partitions an expression into a body and a collection of
-  // parameter expressions.  In subsequent discussions, body(e) refers
-  // to the expression resulting from the removal of the parameter
-  // nodes in e, and parms(e) refers to the set of sub-expressions
-  // identified by S as parameters of e.
-
-  return double(M * NParams + M + 1) / double((M - 1) * CostSav);
+  fprintf(stdout, "Sigma(e1 = %s, e2 = %s) -> %.3f\n", e1->ToString().c_str(), e2->ToString().c_str(), result);
+  return result;
 }
 
 int main(int argc, char *const argv[]) {
@@ -543,13 +546,13 @@ int main(int argc, char *const argv[]) {
   // e1: (.A + 1) * (.A + 2) * (.A + 3),
   // e2: (.B + 1) * (.B + 2) * (.B + 3),
   fprintf(stdout,
-          "f(e1, e2) %.3f %.3f %.3f",
+          "f(e1, e2) F()=%.3f, G()=%.3f, Sigma()=%.3f",
           F(e1, e2),
           G(e1, e2),
           Sigma(e1, e2)
          );
   fprintf(stdout,
-          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %ld\n\n",
           M,
           NParams,
           M,
@@ -572,13 +575,13 @@ int main(int argc, char *const argv[]) {
   // e1: (.A + 1) * (.A + 2) * (.A + 3),
   // e3: (.A + 1) * (.B + 2) * (.C + 3),
   fprintf(stdout,
-          "f(e1, e3) %.3f %.3f %.3f",
+          "f(e1, e3) F()=%.3f, G()=%.3f, Sigma()=%.3f",
           F(e1, e3),
           G(e1, e3),
           Sigma(e1, e3)
          );
   fprintf(stdout,
-          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %ld\n\n",
           M,
           NParams,
           M,
@@ -603,13 +606,13 @@ int main(int argc, char *const argv[]) {
   // e4: .A + .B * (.C + .E),
   // e5: .A + .B * (.D + .E),
   fprintf(stdout,
-          "f(e4, e5) %.3f %.3f %.3f",
+          "f(e4, e5) F()=%.3f, G()=%.3f, Sigma()=%.3f",
           F(e4, e5),
           G(e4, e5),
           Sigma(e4, e5)
          );
   fprintf(stdout,
-          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %ld\n\n",
           M,
           NParams,
           M,
@@ -631,13 +634,13 @@ int main(int argc, char *const argv[]) {
   // e6: .A +.B,
   // e7: .A + .C
   fprintf(stdout,
-          "f(e6, e7) %.3f %.3f %.3f",
+          "f(e6, e7) F()=%.3f, G()=%.3f, Sigma()=%.3f",
           F(e6, e7),
           G(e6, e7),
           Sigma(e6, e7)
          );
   fprintf(stdout,
-          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %ld\n\n",
           M,
           NParams,
           M,
@@ -662,13 +665,13 @@ int main(int argc, char *const argv[]) {
   // e6: .A +.B,
   // e8: .A + (.C + .D)
   fprintf(stdout,
-          "f(e6, e8) %.3f %.3f %.3f",
+          "f(e6, e8) F()=%.3f, G()=%.3f, Sigma()=%.3f",
           F(e6, e8),
           G(e6, e8),
           Sigma(e6, e8)
          );
   fprintf(stdout,
-          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %ld\n\n",
           M,
           NParams,
           M,
