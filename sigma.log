@@ -1,0 +1,93 @@
+Sigma(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.B,1),*(+(.B,2),+(.B,3))))
+S(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.B,1),*(+(.B,2),+(.B,3))))
+S(e1 = +(.A,1), e2 = +(.B,1))
+S(e1 = .A, e2 = .B)
+S(e1 = A, e2 = B)
+TryParams(A [count=1, cost=1], B [count=1, cost=1]): NParams = 1, Cost = 28, CostSav = 26, M = 2
+S(e1 = 1, e2 = 1)
+S(e1 = *(+(.A,2),+(.A,3)), e2 = *(+(.B,2),+(.B,3)))
+S(e1 = +(.A,2), e2 = +(.B,2))
+S(e1 = .A, e2 = .B)
+S(e1 = A, e2 = B)
+TryParams(A [count=2, cost=1], B [count=2, cost=1]): NParams = 1, Cost = 28, CostSav = 24, M = 2
+S(e1 = 2, e2 = 2)
+S(e1 = +(.A,3), e2 = +(.B,3))
+S(e1 = .A, e2 = .B)
+S(e1 = A, e2 = B)
+TryParams(A [count=3, cost=1], B [count=3, cost=1]): NParams = 1, Cost = 28, CostSav = 22, M = 2
+S(e1 = 3, e2 = 3)
+    params[0]  3: A
+    params[1]  3: B
+    pairs[]  3: A; B
+Sigma(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.B,1),*(+(.B,2),+(.B,3)))) -> 0.227
+f(e1, e2) F()=3.000, G()=0.500, Sigma()=0.227 = (2 * 1       + 2 + 1) / (2 - 1) * 22
+
+Sigma(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.A,1),*(+(.B,2),+(.C,3))))
+S(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.A,1),*(+(.B,2),+(.C,3))))
+S(e1 = +(.A,1), e2 = +(.A,1))
+S(e1 = .A, e2 = .A)
+S(e1 = A, e2 = A)
+S(e1 = 1, e2 = 1)
+S(e1 = *(+(.A,2),+(.A,3)), e2 = *(+(.B,2),+(.C,3)))
+S(e1 = +(.A,2), e2 = +(.B,2))
+S(e1 = .A, e2 = .B)
+S(e1 = A, e2 = B)
+TryParams(A [count=1, cost=1], B [count=1, cost=1]): NParams = 1, Cost = 28, CostSav = 26, M = 2
+S(e1 = 2, e2 = 2)
+S(e1 = +(.A,3), e2 = +(.C,3))
+S(e1 = .A, e2 = .C)
+S(e1 = A, e2 = C)
+TryParams(A [count=2, cost=1], C [count=1, cost=1]): NParams = 2, Cost = 28, CostSav = 24, M = 3
+S(e1 = 3, e2 = 3)
+    params[0]  2: A
+    params[1]  1: B
+    params[1]  1: C
+    pairs[]  1: A; B
+    pairs[]  1: A; C
+Sigma(e1 = *(+(.A,1),*(+(.A,2),+(.A,3))), e2 = *(+(.A,1),*(+(.B,2),+(.C,3)))) -> 0.208
+f(e1, e3) F()=2.000, G()=0.250, Sigma()=0.208 = (3 * 2       + 3 + 1) / (3 - 1) * 24
+
+Sigma(e1 = +(.A,*(.B,+(.C,.E))), e2 = +(.A,*(.B,+(.D,.E))))
+S(e1 = +(.A,*(.B,+(.C,.E))), e2 = +(.A,*(.B,+(.D,.E))))
+S(e1 = .A, e2 = .A)
+S(e1 = A, e2 = A)
+S(e1 = *(.B,+(.C,.E)), e2 = *(.B,+(.D,.E)))
+S(e1 = .B, e2 = .B)
+S(e1 = B, e2 = B)
+S(e1 = +(.C,.E), e2 = +(.D,.E))
+S(e1 = .C, e2 = .D)
+S(e1 = C, e2 = D)
+TryParams(C [count=1, cost=1], D [count=1, cost=1]): NParams = 1, Cost = 22, CostSav = 20, M = 2
+S(e1 = .E, e2 = .E)
+S(e1 = E, e2 = E)
+    params[0]  1: C
+    params[1]  1: D
+    pairs[]  1: C; D
+Sigma(e1 = +(.A,*(.B,+(.C,.E))), e2 = +(.A,*(.B,+(.D,.E)))) -> 0.250
+f(e4, e5) F()=1.000, G()=0.125, Sigma()=0.250 = (2 * 1       + 2 + 1) / (2 - 1) * 20
+
+Sigma(e1 = +(.A,.B), e2 = +(.A,.C))
+S(e1 = +(.A,.B), e2 = +(.A,.C))
+S(e1 = .A, e2 = .A)
+S(e1 = A, e2 = A)
+S(e1 = .B, e2 = .C)
+S(e1 = B, e2 = C)
+TryParams(B [count=1, cost=1], C [count=1, cost=1]): NParams = 1, Cost = 10, CostSav = 8, M = 2
+    params[0]  1: B
+    params[1]  1: C
+    pairs[]  1: B; C
+Sigma(e1 = +(.A,.B), e2 = +(.A,.C)) -> 0.625
+f(e6, e7) F()=1.000, G()=0.500, Sigma()=0.625 = (2 * 1       + 2 + 1) / (2 - 1) * 8
+
+Sigma(e1 = +(.A,.B), e2 = +(.A,+(.C,.D)))
+S(e1 = +(.A,.B), e2 = +(.A,+(.C,.D)))
+S(e1 = .A, e2 = .A)
+S(e1 = A, e2 = A)
+S(e1 = .B, e2 = +(.C,.D))
+TryParams(.B [count=1, cost=2], +(.C,.D) [count=1, cost=5]): NParams = 1, Cost = 10, CostSav = 3, M = 2
+    params[0]  1: .B
+    params[1]  1: +(.C,.D)
+    pairs[]  1: .B; +(.C,.D)
+Sigma(e1 = +(.A,.B), e2 = +(.A,+(.C,.D))) -> 1.667
+f(e6, e8) F()=1.000, G()=0.500, Sigma()=1.667 = (2 * 1       + 2 + 1) / (2 - 1) * 3
+
