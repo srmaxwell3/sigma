@@ -379,7 +379,7 @@ void S
      map<pair<string, string>, size_t> &pairs
     )
 {
-  // fprintf(stdout, "S(e1 = %s, e2 = %s)\n", e1->ToString().c_str(), e2->ToString().c_str());
+  fprintf(stdout, "S(e1 = %s, e2 = %s)\n", e1->ToString().c_str(), e2->ToString().c_str());
 
   // N is the set of non-terminals of E.
   // T is the set of terminals.
@@ -437,7 +437,7 @@ double Sigma(Expr const *e1, Expr const *e2) {
     return 0.0;
   }
 
-  CostSav = Cost = e1->Cost();
+  CostSav = Cost = e1->Cost() + e1->Cost();
   map<string, size_t> params[2];
   map<pair<string, string>, size_t> pairs;
   S(e1, e2, params, pairs);
@@ -466,7 +466,7 @@ double Sigma(Expr const *e1, Expr const *e2) {
   // nodes in e, and parms(e) refers to the set of sub-expressions
   // identified by S as parameters of e.
 
-  return double(M * NParams + M + 1) / double((M - 1) * (Cost - CostSav));
+  return double(M * NParams + M + 1) / double((M - 1) * CostSav);
 }
 
 int main(int argc, char *const argv[]) {
@@ -476,22 +476,28 @@ int main(int argc, char *const argv[]) {
   // e1: (.A + 1) * (.A + 2) * (.A + 3),
   Expr *e1 =
     new Mul({ new Add({ new Dot(new Nam("A")), new Lit(1) }),
-              new Add({ new Dot(new Nam("A")), new Lit(2) }),
-              new Add({ new Dot(new Nam("A")), new Lit(3) })
+	      new Mul({new Add({ new Dot(new Nam("A")), new Lit(2) }),
+                       new Add({ new Dot(new Nam("A")), new Lit(3) })
+		      }
+		     )
             }
            );
   // e2: (.B + 1) * (.B + 2) * (.B + 3),
   Expr *e2 =
     new Mul({ new Add({ new Dot(new Nam("B")), new Lit(1) }),
-              new Add({ new Dot(new Nam("B")), new Lit(2) }),
-              new Add({ new Dot(new Nam("B")), new Lit(3) })
+	      new Mul({new Add({ new Dot(new Nam("B")), new Lit(2) }),
+                       new Add({ new Dot(new Nam("B")), new Lit(3) })
+		      }
+		     )
             }
            );
   // e3: (.A + 1) * (.B + 2) * (.C + 3),
   Expr *e3 =
     new Mul({ new Add({ new Dot(new Nam("A")), new Lit(1) }),
-              new Add({ new Dot(new Nam("B")), new Lit(2) }),
-              new Add({ new Dot(new Nam("C")), new Lit(3) })
+	      new Mul({new Add({ new Dot(new Nam("B")), new Lit(2) }),
+                       new Add({ new Dot(new Nam("C")), new Lit(3) })
+		      }
+		     )
             }
            );
 
@@ -532,8 +538,8 @@ int main(int argc, char *const argv[]) {
   // f(e4,e5) 1.0 0.125 1.5 =   (2 * 1       + 2 + 1) / (2 - 1) * 4
   // f(e6,e7) 1.0 0.5   2.5 =   (2 * 1       + 2 + 1) / (2 - 1) * 2
 
-  // f         F   G    SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
-  // f(e1,e2) 3.0 0.5   0.625 = (2 * 1       + 2 + 1) / (2 - 1) * 8
+  // f         F     G     SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
+  // f(e1, e2) 3.0   0.5   0.625 = (2 * 1       + 2 + 1) / (2 - 1) * 8
   // e1: (.A + 1) * (.A + 2) * (.A + 3),
   // e2: (.B + 1) * (.B + 2) * (.B + 3),
   fprintf(stdout,
@@ -550,9 +556,19 @@ int main(int argc, char *const argv[]) {
           M,
           CostSav // (Cost - CostSav)
          );
+  /*
+   * Sigma(e1 = *(+(.A,1),+(.A,2),+(.A,3)), e2 = *(+(.B,1),+(.B,2),+(.B,3)))
+   * TryParams(A [1, 1], B [1, 1]): NParams = 1, Cost = 13, CostSav = 11, M = 2
+   * TryParams(A [2, 1], B [2, 1]): NParams = 1, Cost = 13, CostSav = 9, M = 2
+   * TryParams(A [3, 1], B [3, 1]): NParams = 1, Cost = 13, CostSav = 7, M = 2
+   *     [0]  3: A
+   *     [1]  3: B
+   *     [p]  3: A; B
+   * f(e1, e2) 3.000 0.500 0.833 = (2 * 1       + 2 + 1) / (2 - 1) * 7
+   */
 
-  // f         F   G    SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
-  // f(e1,e3) 3.0 0.5   1.325 = (2 * 3       + 2 + 1) / (2 - 1) * 8
+  // f         F     G     SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
+  // f(e1, e3) 3.0   0.5   1.325 = (2 * 3       + 2 + 1) / (2 - 1) * 8
   // e1: (.A + 1) * (.A + 2) * (.A + 3),
   // e3: (.A + 1) * (.B + 2) * (.C + 3),
   fprintf(stdout,
@@ -570,8 +586,20 @@ int main(int argc, char *const argv[]) {
           CostSav // (Cost - CostSav)
          );
 
-  // f         F   G    SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
-  // f(e4,e5) 1.0 0.325 1.5 =   (2 * 1       + 2 + 1) / (2 - 1) * 4
+  /*
+   * Sigma(e1 = *(+(.A,1),+(.A,2),+(.A,3)), e2 = *(+(.A,1),+(.B,2),+(.C,3)))
+   * TryParams(A [1, 1], B [1, 1]): NParams = 1, Cost = 13, CostSav = 11, M = 2
+   * TryParams(A [2, 1], C [1, 1]): NParams = 2, Cost = 13, CostSav = 9, M = 3
+   *     [0]  2: A
+   *     [1]  1: B
+   *     [1]  1: C
+   *     [p]  1: A; B
+   *     [p]  1: A; C
+   * f(e1, e3) 2.000 0.333 1.250 = (3 * 2       + 3 + 1) / (3 - 1) * 9
+   */
+
+  // f         F     G     SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
+  // f(e4, e5) 1.0   0.325 1.5   = (2 * 1       + 2 + 1) / (2 - 1) * 4
   // e4: .A + .B * (.C + .E),
   // e5: .A + .B * (.D + .E),
   fprintf(stdout,
@@ -589,8 +617,17 @@ int main(int argc, char *const argv[]) {
           CostSav // (Cost - CostSav)
          );
 
-  // f         F   G    SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
-  // f(e6,e7) 1.0 0.5   2.5 =   (2 * 1       + 2 + 1) / (2 - 1) * 2
+  /*
+   * Sigma(e1 = +(.A,*(.B,+(.C,.E))), e2 = +(.A,*(.B,+(.D,.E))))
+   * TryParams(C [1, 1], D [1, 1]): NParams = 1, Cost = 11, CostSav = 9, M = 2
+   *     [0]  1: C
+   *     [1]  1: D
+   *     [p]  1: C; D
+   * f(e4, e5) 1.000 0.125 2.500 = (2 * 1       + 2 + 1) / (2 - 1) * 9
+   */
+
+  // f         F     G     SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
+  // f(e6, e7) 1.0   0.5   2.5   = (2 * 1       + 2 + 1) / (2 - 1) * 2
   // e6: .A +.B,
   // e7: .A + .C
   fprintf(stdout,
@@ -607,6 +644,46 @@ int main(int argc, char *const argv[]) {
           M,
           CostSav // (Cost - CostSav)
          );
+
+  /*
+   * Sigma(e1 = +(.A,.B), e2 = +(.A,.C))
+   * TryParams(B [1, 1], C [1, 1]): NParams = 1, Cost = 5, CostSav = 3, M = 2
+   *     [0]  1: B
+   *     [1]  1: C
+   *     [p]  1: B; C
+   * f(e6, e7) 1.000 0.500 2.500 = (2 * 1       + 2 + 1) / (2 - 1) * 3
+   */
+
+  // e8: .A + (.C + .D)
+  Expr *e8 = new Add({ new Dot(new Nam("A")), new Add ({ new Dot(new Nam("C")), new Dot(new Nam("D")) })});
+
+  // f         F     G     SIGMA   (M * NParams + M + 1) / (M - 1) * CostSav
+  // f(e6, e8) 
+  // e6: .A +.B,
+  // e8: .A + (.C + .D)
+  fprintf(stdout,
+          "f(e6, e8) %.3f %.3f %.3f",
+          F(e6, e8),
+          G(e6, e8),
+          Sigma(e6, e8)
+         );
+  fprintf(stdout,
+          " = (%lu * %lu       + %lu + 1) / (%lu - 1) * %lu\n\n",
+          M,
+          NParams,
+          M,
+          M,
+          CostSav // (Cost - CostSav)
+         );
+
+  /*
+   * Sigma(e1 = +(.A,.B), e2 = +(.A,+(.C,.D)))
+   * TryParams(.B [1, 2], +(.C,.D) [1, 5]): NParams = 1, Cost = 5, CostSav = 18446744073709551614, M = 2
+   *     [0]  1: .B
+   *     [1]  1: +(.C,.D)
+   *     [p]  1: .B; +(.C,.D)
+   * f(e6, e8) 1.000 0.500 0.714 = (2 * 1       + 2 + 1) / (2 - 1) * 18446744073709551614
+   */
   return 0;
 }
 
